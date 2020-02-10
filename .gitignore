@@ -1,0 +1,9 @@
+*.aux
+*.dvi
+*.log
+*.rds
+
+.rstudio/
+.bash_history
+run.sh
+

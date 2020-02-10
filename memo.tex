@@ -1,0 +1,84 @@
+\documentclass{jsarticle}
+\usepackage{bm}
+
+\newcommand{\numput}{N}
+\newcommand{\amount}{A}
+\newcommand{\numtoken}[1]{n^{[#1]}}
+\newcommand{\ampeq}{&=&}
+\newcommand{\weight}[1]{w^{[#1]}}
+\newcommand{\totalweight}{W}
+\newcommand{\likelihood}{L}
+\newcommand{\observation}{X}
+\newcommand{\prob}{\mathrm{Pr}}
+\newcommand{\putmin}{N_{\mathrm{min}}}
+\newcommand{\putmax}{N_{\mathrm{max}}}
+\newcommand{\loglikelihood}{l}
+\newcommand{\logsumexp}{\mathtt{logsumexp}}
+\newcommand{\hairetsu}[1]{\mathtt{#1}}
+
+\begin{document}
+この1年間弱、買い物で生じた小銭を貯金箱に貯めていたが、最近、その貯金箱が一杯になった。その総額を知りたいが硬貨を数えるのは手間がかかるので、硬貨の総重量を測り、その重さから総額を推定する方法を考える。
+
+\section{コインの総重量の生成モデル}
+帰宅した際に財布に小銭があれば、それを全て貯金箱に投入する。この行為を{\bf 投入}と呼ぶ。
+投入の回数を$\numput$とし、
+$\numput$は$\{\putmin, \putmin + 1, \ldots, \putmax\}$に値をとるカテゴリカル分布に従うと仮定する。
+$\theta_{i} := \prob(\numput=i), \bm{\theta}:=(\theta_{\putmin}, \theta_{\putmin + 1}, \ldots, \theta_{\putmax})$とし、$\bm{\theta}$の事前分布として
+$\sum_{i}\theta_{i}=1$なる単体上の一様分布を仮定する。
+
+$i$回目の投入における金額を$\amount_{i}$とする。$\amount_{i}$は$\{1, 2, \ldots, 999\}$の一様分布に従うとする。金額の発生分布は一様でもない気がするが他にアイデアもないのでこうした。
+$i$回目の投入における$p$円玉$(p\in \{1, 5, 10, 50, 100, 500\})$の枚数を$\numtoken{p}_{i}$とする。$\numtoken{p}_{i}$は、$\amount_{i}$から次のように計算する。
+\begin{eqnarray*}
+ \numtoken{500}_{i} \ampeq \amount_{i} / 500 \\
+ \numtoken{100}_{i} \ampeq (\amount_{i} - 500\numtoken{500}_{i}) / 100 \\
+ \numtoken{50}_{i} \ampeq (\amount_{i} - 500\numtoken{500}_{i} - 100\numtoken{100}_{i}) / 50 \\
+ \numtoken{10}_{i} \ampeq (\amount_{i} - 500\numtoken{500}_{i} - 100\numtoken{100}_{i} - 50\numtoken{50}_{i}) / 10 \\
+ \numtoken{5}_{i} \ampeq (\amount_{i} - 500\numtoken{500}_{i} - 100\numtoken{100}_{i} - 50\numtoken{50}_{i} - 10\numtoken{10}_{i}) / 5 \\
+ \numtoken{1}_{i} \ampeq \amount_{i} - 500\numtoken{500}_{i} - 100\numtoken{100}_{i} - 50\numtoken{50}_{i} - 10\numtoken{10}_{i} - 5\numtoken{5}
+\end{eqnarray*}
+ここで、割り算$/$は、整数商の計算である。これは、合計金額が$\amount_{i}$となる小銭の組み合わせで最も枚数が少なくなる組み合わせを計算している。これも、必ずしも現実を反映しているとは限らないが他にアイデアもないのでこうした。
+
+$p$円玉の重さを$\weight{p}$とする。$\weight{p}, \numtoken{p}_{i}$を使って、コインの総重量$\totalweight$の計算式が書ける。
+\begin{eqnarray*}
+ \totalweight \ampeq \sum_{i=1}^{N} \sum_{p} \weight{p} \numtoken{p}_{i}
+\end{eqnarray*}
+重さの測定に誤差があると想定し、硬貨の総重量$\observation$は$\totalweight$を期待値とするガンマ分布に従うとする。
+
+\section{尤度の計算式}
+記録されていない$\numput, \amount_{i}$を含めると、データの尤度$\likelihood$, 対数尤度$\loglikelihood$は
+\begin{eqnarray*}
+ \likelihood(\observation, \numput, \amount_{1}, \ldots, \amount_{\numput}) \ampeq \Gamma(\observation; \beta \totalweight, \beta) \left(\frac{1}{999}\right)^{N} \theta_{N} \\
+ \loglikelihood(\observation, \numput, \amount_{1}, \ldots, \amount_{\numput}) \ampeq \log\Gamma(\observation; \beta \totalweight, \beta) - N \log 999 + \log \theta_{N}
+\end{eqnarray*}
+と書ける。$\beta$はガンマ分布のパラメータである。パラメータの取り方は、Stanでの定義に合わせた。記録がない$\numput, \amount_{i}$についてintegrate outするとデータの尤度
+\begin{eqnarray*}
+ \likelihood(\observation) \ampeq \sum_{\numput=\putmin}^{\putmax} \sum_{i=1}^{N} \sum_{\amount_{i}=1}^{999} \likelihood(\observation, \numput, \amount_{1}, \ldots, \amount_{\numput})
+\end{eqnarray*}
+が得られる。この尤度を計算する式をStanで書けば、サンプリングできる。
+
+\section{logsumexp}
+上の尤度の対数を取ると
+\begin{eqnarray*}
+ \log(\likelihood(\observation)) \ampeq \log\left(\sum_{\numput=\putmin}^{\putmax} \sum_{i=1}^{N} \sum_{\amount_{i}=1}^{999} \likelihood(\observation, \numput, \amount_{1}, \ldots, \amount_{\numput}\right) \\
+ \ampeq \log\left(\sum_{\numput=\putmin}^{\putmax} \sum_{i=1}^{N} \sum_{\amount_{i}=1}^{999} \exp(\loglikelihood(\observation, \numput, \amount_{1}, \ldots, \amount_{\numput}))\right)
+\end{eqnarray*}
+という$\logsumexp$の形になる。2つの配列$\hairetsu{a}, \hairetsu{b}$に対して、
+\begin{eqnarray*}
+ \logsumexp(\hairetsu{a} \mathtt{++} \hairetsu{b}) \ampeq
+  \log(\exp(\hairetsu{a}[1]) + \exp(\hairetsu{a}[2]) + \cdots + \exp(\hairetsu{a}[m]) + \exp(\hairetsu{b}[1]) + \exp(\hairetsu{b}[2]) + \cdots + \exp(\hairetsu{b}[n])) \\
+ &\neq& \log(\exp(\hairetsu{a}[1]) + \exp(\hairetsu{a}[2]) + \cdots + \exp(\hairetsu{a}[m])) + \log(\exp(\hairetsu{b}[1]) + \exp(\hairetsu{b}[2]) + \cdots + \exp(\hairetsu{b}[n])) \\
+ \ampeq \logsumexp(\hairetsu{a}) + \logsumexp(\hairetsu{b})
+\end{eqnarray*}
+つまり、logsumexを分割して計算することはできないことに注意。
+
+\section{和の個数}
+データの尤度を計算するために$\displaystyle \sum_{\numput=\putmin}^{\putmax}\sum_{i=1}^{N} \sum_{p} $の計算が必要になる。この式が、幾つの項から成っているかを計算する。
+
+$\sum_{p}$で6個出てきて、$\sum_{i=1}^{\numput} \sum_{p}$で$6\numput$出てくるので、全体では、
+\begin{eqnarray*}
+ \sum_{\numput=\putmin}^{\putmax} 6\numput = 6 \frac{\putmin + \putmax}{2}(\putmax - \putmin + 1)
+\end{eqnarray*}
+個の項が出てくる。
+
+
+\end{document}

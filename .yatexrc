@@ -1,0 +1,22 @@
+(setq tmp-singlecmd-table '(
+("neq")
+("loglikelihood")
+("exp")
+("log")
+("putmin")
+("prob")
+("observation")
+("likelihood")
+("totalweight")
+("ampeq")
+("amount")
+("ldots")
+("payment")
+("numput")
+))
+
+(setq tmp-section-table '(
+("hairetsu")
+("weight")
+("numtoken")
+))
