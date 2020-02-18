@@ -8,7 +8,7 @@ iter <- 10000
 warmup <- 2000
 chains <- 4
 
-stan_file <- "model2.stan"
+stan_file <- "model3.stan"
 model_file <- "model.rds"
 
 should_make <- function(src, prd){
@@ -58,7 +58,8 @@ sampling <- function(model, data, conf){
 
 data <- list(
   weight_total = 10 * 1000,
-  num_put = 1
+  Nmin = 250,
+  Nmax = 400
 )
 model <- compile(stan_file, model_file)
 fit <- sampling(model, data, list(

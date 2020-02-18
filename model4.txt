@@ -1,0 +1,5 @@
+model {
+  change ~ dcat(p[])
+  n_500 <- step(change - 500)
+  c2 <- change - n_500 * 500  
+}
