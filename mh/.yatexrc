@@ -1,0 +1,19 @@
+(setq tmp-singlecmd-table '(
+("weightvar")
+("expectation")
+("exp")
+("weightobs")
+("weightall")
+("ampeq")
+("observation")
+("categorical")
+("meannumput")
+("poisson")
+("maisu")
+("numput")
+))
+
+(setq tmp-section-table '(
+("weight")
+("ncoins")
+))

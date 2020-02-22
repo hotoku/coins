@@ -1,0 +1,81 @@
+\documentclass{jsarticle}
+
+\newcommand{\numput}{T}
+\newcommand{\maisu}{M}
+\newcommand{\poisson}{\mathrm{Poisson}}
+\newcommand{\categorical}{\mathrm{Categorical}}
+\newcommand{\meannumput}{\mu}
+\newcommand{\ncoins}[1]{N^{#1}}
+\newcommand{\weight}[1]{W^{#1}}
+\newcommand{\weightall}{W}
+\newcommand{\observation}{X}
+\newcommand{\ampeq}{&=&}
+\newcommand{\weightobs}{W_{\mathrm{obs}}}
+\newcommand{\expectation}{\mathrm{E}}
+\newcommand{\weightvar}{\beta}
+
+\begin{document}
+\section{生成モデル}
+コインの重量の生成モデルを考える。貯金箱へのコインの投入が$\numput$回あったとする。
+第$n$回目の投入で、$\maisu_{n}$枚のコインを投入したとする。
+$\numput, \maisu_{n}$の事前分布を
+\begin{eqnarray*}
+ \numput | \meannumput &\sim& \poisson(\meannumput) \\
+ \maisu_{n} | \numput &\sim& \categorical\left(\frac{1}{999}\right)
+\end{eqnarray*}
+とする。$\maisu = (\maisu_{1}, \maisu_{2}, \ldots, \maisu_{\numput})$とする。
+$n$回目の投入での$p$円硬貨の枚数を$\ncoins{p}_{n}$とする($p\in\{1,5,10,50,100,500\}$)。
+$\ncoins{p}_{n}$は、合計金額が$\maisu_{n}$となるような最小枚数の組み合わせとする。
+$p$円硬貨の重さを$\weight{p}$とする。
+貯金箱の中身全体の重さ$\weightall$は
+\begin{eqnarray*}
+ \weightall \ampeq \sum_{n=1}^{\numput} \sum_{p} \ncoins{p}_{n} \weight{p}
+\end{eqnarray*}
+と計算できる。重さの観測値$\weightobs$は、$\weightall$を期待値とするガンマ分布から発生するとする
+\begin{eqnarray*}
+ \weightobs | \maisu, \weightvar \sim \Gamma(\weightall \weightvar, \weightvar)
+\end{eqnarray*}
+ただし、$\Gamma(k, \lambda)$の密度関数は、
+\begin{eqnarray*}
+ f(x; k, \lambda) \ampeq \frac{\lambda^{k}}{\Gamma(k)}x^{k-1}\exp(-\lambda x)
+\end{eqnarray*}
+で与えられる。この分布の期待値は
+\begin{eqnarray*}
+ \expectation [X] = \frac{k}{\lambda}
+\end{eqnarray*}
+である。$k=\weightall \weightvar, \lambda=\weightvar$と置くと、$\expectation[\weightobs] = \weightall$となっていることが確認できる。
+
+正のパラメータ$\meannumput, \weightvar$の事前分布は、十分に大きい分散を持つガンマ分布に従うとする。
+
+\section{同時分布}
+全確率変数の同時分布は
+\begin{eqnarray*}
+ f(\meannumput, \numput, \maisu, \weightobs) \ampeq f(\weightobs | \maisu, \weightvar)f(\maisu | \numput)f(\numput | \meannumput)f(\meannumput)f(\weightvar) \\
+  \ampeq \Gamma(\weightobs | \weightall \weightvar, \weightvar) \left(\frac{1}{999}\right)^{\numput} \poisson(T | \meannumput) \Gamma(\weightvar | \alpha_{1}, \alpha_{2}) \Gamma(\meannumput | \alpha_{3}, \alpha_{4})
+\end{eqnarray*}
+で計算できる。$\alpha_{i}, i=1,2,3,4$は、適当なハイパーパラメータである。
+
+
+\section{サンプリング法}
+サンプリングはメトロポリス・ヘイスティング法で行う。アルゴリズムの導出はWikipediaを参考にした。
+サンプリングが必要なパラメータは、$\meannumput, \numput, \maisu, \weightvar$の3+$\numput$個である。
+$\theta = (\meannumput, \numput, \maisu, \weightvar)$として、現在のパラメータを$\theta$、提案されたパラメータを$\theta'$と書く。
+
+提案分布$g(\theta\rightarrow\theta')$を、次のように与える。
+\begin{enumerate}
+ \item $\meannumput, \weightvar$は、現在の値を期待値とし、適当な分散を持つガンマ分布
+ \item $\numput$は、現在の値を期待値とするポアソン分布
+ \item $\maisu$は、$1\sim 999$の一様分布
+\end{enumerate}
+
+提案分布の密度関数は、次で与えられる。
+\begin{eqnarray*}
+ g(\theta\rightarrow\theta') \ampeq \left(\frac{1}{999}\right)^{\numput'} \poisson(\numput' | \numput) \Gamma(\meannumput' | \meannumput \alpha_{5}, \alpha_{5}) \Gamma(\weightvar' | \weightvar \alpha_{6}, \alpha_{6})
+\end{eqnarray*}
+
+採択率$A(\theta\rightarrow\theta')$は、
+\begin{eqnarray*}
+ 
+\end{eqnarray*}
+
+\end{document}
