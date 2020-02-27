@@ -12,7 +12,12 @@
 \newcommand{\ampeq}{&=&}
 \newcommand{\weightobs}{W_{\mathrm{obs}}}
 \newcommand{\expectation}{\mathrm{E}}
-\newcommand{\weightvar}{\beta}
+\newcommand{\variance}{V}
+\newcommand{\weightsd}{\beta}
+\newcommand{\gammak}{k}
+\newcommand{\gammal}{\lambda}
+\newcommand{\parmean}{m}
+\newcommand{\parsd}{s}
 
 \begin{document}
 \section{生成モデル}
@@ -31,51 +36,88 @@ $p$円硬貨の重さを$\weight{p}$とする。
 \begin{eqnarray*}
  \weightall \ampeq \sum_{n=1}^{\numput} \sum_{p} \ncoins{p}_{n} \weight{p}
 \end{eqnarray*}
-と計算できる。重さの観測値$\weightobs$は、$\weightall$を期待値とするガンマ分布から発生するとする
+と計算できる。重さの観測値$\weightobs$は、$\weightall, \weightsd$を期待値、標準偏差とするガンマ分布から発生するとする。
 \begin{eqnarray*}
- \weightobs | \maisu, \weightvar \sim \Gamma(\weightall \weightvar, \weightvar)
+ \weightobs | \maisu, \weightsd &\sim& \Gamma \\
+ \expectation[\weightobs] \ampeq \weightall
 \end{eqnarray*}
-ただし、$\Gamma(k, \lambda)$の密度関数は、
-\begin{eqnarray*}
- f(x; k, \lambda) \ampeq \frac{\lambda^{k}}{\Gamma(k)}x^{k-1}\exp(-\lambda x)
-\end{eqnarray*}
-で与えられる。この分布の期待値は
-\begin{eqnarray*}
- \expectation [X] = \frac{k}{\lambda}
-\end{eqnarray*}
-である。$k=\weightall \weightvar, \lambda=\weightvar$と置くと、$\expectation[\weightobs] = \weightall$となっていることが確認できる。
 
-正のパラメータ$\meannumput, \weightvar$の事前分布は、十分に大きい分散を持つガンマ分布に従うとする。
+正のパラメータ$\meannumput, \weightsd$の事前分布は、十分に大きい分散を持つガンマ分布に従うとする。
+
+\subsection{ガンマ分布について}
+$\Gamma(\gammak, \gammal)$の密度関数は、
+\begin{eqnarray*}
+ f(x; \gammak, \gammal) \ampeq \frac{\gammal^{\gammak}}{\Gamma(\gammak)}x^{\gammak-1}\exp(-\gammal x)
+\end{eqnarray*}
+で与えられる。この分布の期待値と分散は
+\begin{eqnarray*}
+ \expectation [X] \ampeq \frac{\gammak}{\gammal} \\
+ \variance [X] \ampeq \frac{\gammak}{\gammal^{2}} \\
+\end{eqnarray*}
+逆に、平均と分散が与えられる場合には、
+\begin{eqnarray*}
+ \gammal \ampeq \frac{\expectation [X]}{\variance [X]} \\
+ \gammak \ampeq \frac{\expectation [X]^{2}}{\variance [X]}
+\end{eqnarray*}
+と計算できる。
+
+である。 $\weightobs$の観測分布のパラメータ$\gammak_{\weightobs}, \gammal_{\weightobs}$は、
+\begin{eqnarray*}
+ \gammal_{\weightobs} \ampeq \frac{W}{\weightsd^{2}} \\
+ \gammak_{\weightobs} \ampeq \frac{W^{2}}{\weightsd^{2}} \\
+\end{eqnarray*}
+
+
 
 \section{同時分布}
 全確率変数の同時分布は
 \begin{eqnarray*}
- f(\meannumput, \numput, \maisu, \weightobs) \ampeq f(\weightobs | \maisu, \weightvar)f(\maisu | \numput)f(\numput | \meannumput)f(\meannumput)f(\weightvar) \\
-  \ampeq \Gamma(\weightobs | \weightall \weightvar, \weightvar) \left(\frac{1}{999}\right)^{\numput} \poisson(T | \meannumput) \Gamma(\weightvar | \alpha_{1}, \alpha_{2}) \Gamma(\meannumput | \alpha_{3}, \alpha_{4})
+ f(\meannumput, \numput, \maisu, \weightobs) \ampeq f(\weightobs | \maisu, \weightsd)f(\maisu | \numput)f(\numput | \meannumput)f(\meannumput)f(\weightsd) \\
+ \ampeq \Gamma(\weightobs | \weightall \weightsd, \weightsd) \left(\frac{1}{999}\right)^{\numput} \poisson(T | \meannumput) 
+  \Gamma(\weightsd | \gammak_{\weightsd}, \gammal_{\weightsd}) \Gamma(\meannumput | \gammak_{\meannumput}, \gammal_{\meannumput})
 \end{eqnarray*}
-で計算できる。$\alpha_{i}, i=1,2,3,4$は、適当なハイパーパラメータである。
-
+と書ける。$\gammak_{\weightsd}, \gammal_{\weightsd}, \gammak_{\meannumput}, \gammal_{\meannumput}$はハイパーパラメータであるが、この形だと大きさが分かりづらいので、
+$\parmean_{\weightsd}, \parsd_{\weightsd}, \parmean_{\meannumput}, \parsd_{\meannumput}$をハイパーパラメータとする（各パラメータの平均と標準偏差）。
+すると、
+\begin{eqnarray*}
+ \parmean_{\weightsd} \ampeq \frac{\gammak_{\weightsd}}{\gammal_{\weightsd}} \\
+ \parsd_{\weightsd}^{2} \ampeq \frac{\gammak_{\weightsd}}{\gammal_{\weightsd}^{2}}
+\end{eqnarray*}
+より、
+\begin{eqnarray*}
+ \gammal_{\weightsd} \ampeq \frac{\parmean_{\weightsd}}{\parsd_{\weightsd}^{2}} \\
+ \gammak_{\weightsd} \ampeq \parmean_{\weightsd} \gammal_{\weightsd} = \frac{\parmean_{\weightsd}^{2}}{\parsd_{\weightsd}^{2}}
+\end{eqnarray*}
+となる。
 
 \section{サンプリング法}
 サンプリングはメトロポリス・ヘイスティング法で行う。アルゴリズムの導出はWikipediaを参考にした。
-サンプリングが必要なパラメータは、$\meannumput, \numput, \maisu, \weightvar$の3+$\numput$個である。
-$\theta = (\meannumput, \numput, \maisu, \weightvar)$として、現在のパラメータを$\theta$、提案されたパラメータを$\theta'$と書く。
+サンプリングが必要なパラメータは、$\meannumput, \numput, \maisu, \weightsd$の3+$\numput$個である。
+$\theta = (\meannumput, \numput, \maisu, \weightsd)$として、現在のパラメータを$\theta$、提案されたパラメータを$\theta'$と書く。
 
 提案分布$g(\theta\rightarrow\theta')$を、次のように与える。
 \begin{enumerate}
- \item $\meannumput, \weightvar$は、現在の値を期待値とし、適当な分散を持つガンマ分布
+ \item $\meannumput, \weightsd$は、現在の値を期待値とし、適当な分散を持つガンマ分布
  \item $\numput$は、現在の値を期待値とするポアソン分布
  \item $\maisu$は、$1\sim 999$の一様分布
 \end{enumerate}
 
 提案分布の密度関数は、次で与えられる。
 \begin{eqnarray*}
- g(\theta\rightarrow\theta') \ampeq \left(\frac{1}{999}\right)^{\numput'} \poisson(\numput' | \numput) \Gamma(\meannumput' | \meannumput \alpha_{5}, \alpha_{5}) \Gamma(\weightvar' | \weightvar \alpha_{6}, \alpha_{6})
+ g(\theta\rightarrow\theta') \ampeq \left(\frac{1}{999}\right)^{\numput'} \poisson(\numput' | \numput) 
+  \Gamma(\meannumput' | \gammak'_{\meannumput}, \gammal'_{\meannumput}) \Gamma(\weightsd' | \gammak'_{\weightsd}, \gammal'_{\weightsd})
 \end{eqnarray*}
+ここで、$\meannumput', \weightsd'$の提案分布の標準偏差をハイパーパラメータ$\parsd'_{\meannumput}, \parsd'_{\weightsd}$として固定しておく。
+これらの提案分布のパラメータは、
+\begin{eqnarray*}\\
+ \gammal'_{\meannumput} \ampeq \frac{\meannumput}{(\parsd'_{\meannumput})^{2}} \\
+ \gammak'_{\meannumput} \ampeq \frac{\meannumput^{2}}{(\parsd'_{\meannumput})^{2}}
+\end{eqnarray*}
+などと計算できる。
 
-採択率$A(\theta\rightarrow\theta')$は、
-\begin{eqnarray*}
- 
-\end{eqnarray*}
+\section{logsumexp}
+\[
+ \exp(\sum_{i} a_{i}) = \exp(\sum_{i}^{N} (a_{i} - \min(a_{j})) + N\min (a_{j}))
+\]
 
 \end{document}

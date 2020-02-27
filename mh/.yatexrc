@@ -1,4 +1,11 @@
 (setq tmp-singlecmd-table '(
+("weightsd")
+("parvar")
+("parmean")
+("lambda")
+("gammak")
+("variance")
+("min")
 ("weightvar")
 ("expectation")
 ("exp")
