@@ -94,7 +94,7 @@ class Normal(Sampler):
 
 
 class Coin(Sampler):
-    Param = namedtuple("Param", "mu, T, M, beta")
+    Param = namedtuple("Param", "mu T M beta")
 
     def __init__(self, observation, hyper_parameter):
         self.Wobs = observation
@@ -145,6 +145,63 @@ def l(e, v):
 
 def k(e, v):
     return (e**2) / (v**2)
+
+
+class Coin2(Sampler):
+    Param = namedtuple("Param", "T M mu beta")
+
+    def __init__(self, observation, hyper_parameter):
+        self.Wo = observation
+        self.m_beta, self.s_beta, self.m_mu, self.s_mu, self.s_beta_, self.s_mu_ = hyper_parameter
+        self.k_mu = k(self.m_mu, self.s_mu)
+        self.l_mu = l(self.m_mu, self.s_mu)
+        self.k_beta = k(self.m_beta, self.s_beta)
+        self.l_beta = l(self.m_beta, self.s_beta)
+
+    def log_likelihood(self, prm):
+        T, M, mu, beta = prm
+        l1 = llgamma(mu, self.k_mu, self.l_mu)
+        l2 = llgamma(beta, self.k_beta, self.l_beta)
+        l3 = llpoisson(T, mu)
+        l4 = -T * log(999)
+
+        W = np.sum(calc_weight(M))
+        k_Wo = k(W, beta)
+        l_Wo = l(W, beta)
+        l5 = llgamma(self.Wo, k_Wo, l_Wo)
+        return l1 + l2 + l3 + l4 + l5
+
+    def log_sampling_distribution(self, to_, from_):
+        T_, M_, mu_, beta_ = to_
+        T, M, mu, beta = from_
+
+        kb = k(beta, self.s_beta_)
+        lb = l(beta, self.s_beta_)
+        l1 = llgamma(beta_, kb, lb)
+
+        km = k(mu, self.s_mu_)
+        lm = l(mu, self.s_mu_)
+        l2 = llgamma(mu_, km, lm)
+
+        l3 = -T_ * log(999)
+        l4 = llpoisson(T_, T)
+
+        return l1 + l2 + l3 + l4
+
+    def sample(self, prm):
+        T, M, mu, beta = prm
+        kb = k(beta, self.s_beta_)
+        lb = l(beta, self.s_beta_)
+        beta_ = np.random.gamma(kb, 1/lb)
+
+        km = k(mu, self.s_mu_)
+        lm = l(mu, self.s_mu_)
+        mu_ = np.random.gamma(km, 1/lm)
+
+        T_ = np.random.poisson(T)
+        M_ = np.random.randint(1, 1000, T_)
+
+        return Coin2.Param(T_, M_, mu_, beta_)
 
 
 class Simple(Sampler):
