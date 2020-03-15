@@ -1,0 +1,32 @@
+\documentclass{jsarticle}
+
+\newcommand{\poisson}{\mathrm{Poisson}}
+\newcommand{\uniform}{\mathrm{U}}
+\newcommand{\expectation}{\mathrm{E}}
+\newcommand{\variance}{\mathrm{V}}
+
+\begin{document}
+コインのモデルが上手くいかないので、もう少しシンプルなモデルで考えてみる。
+
+\begin{eqnarray*}
+ T &\sim& \poisson(\mu_{T}) \\
+ M_{i} &\sim& \uniform \{1, 2, \ldots, 999\} (i=1,2,\ldots,T) \\
+ W &=& \Gamma(k_{W}, \lambda_{W})
+\end{eqnarray*}
+というモデルを考える。$\expectation[W] = \sum M_{i}, \variance[W] = v^{2}_{W}$となるように、
+\begin{eqnarray*}
+ \lambda_{W} &=& \frac{\sum M_{i}}{v^{2}_{W}} \\
+ k_{W} &=& \frac{(\sum M_{i})^{2}}{v^{2}_{W}}
+\end{eqnarray*}
+とする。$\mu_{T}, v_{W}$は、十分に大きい分散を持つガンマ分布に従うとする。ハイパーパラメータは、$\mu_{T}, v_{W}$の平均・標準偏差の4つ。
+
+\section{同時分布}
+全確率変数の同時分布は
+\begin{eqnarray*}
+ f(\mu_{T}, T, M, W) &=& f(W | M, v_{W})f(M | T)f(T|\mu_{T})f(\mu_{T})f(v_{W}) \\
+ &=&
+  \Gamma(W | k_{W}, \lambda_{W}) \left(\frac{1}{999}\right)^{T} \poisson(T | \mu_{T}) \Gamma(\mu | k_{\mu_{T}}, \lambda_{\mu_{T}}) \Gamma(v_{W} | k_{v_{W}}, \lambda_{v_{W}})
+\end{eqnarray*}
+ただし、$k_{\mu_{T}}, \lambda_{\mu_{T}}, k_{v_{W}}, \lambda_{v_{W}}$などは、それぞれのパラメータの平均・標準偏差から決まる。
+
+\end{document}
